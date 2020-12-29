@@ -8,6 +8,7 @@ use std::fs;
 use std::process::Command;
 
 #[derive(Debug, Clone)]
+#[repr(C)]
 pub struct Response {
     pub output: *const c_char,
     pub err: *const c_char,
