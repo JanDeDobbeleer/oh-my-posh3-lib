@@ -1,10 +1,8 @@
 extern crate libc;
 
 use libc::c_char;
-use std::env;
 use std::ffi::CStr;
 use std::ffi::CString;
-use std::fs;
 use std::process::Command;
 
 #[derive(Debug, Clone)]
@@ -15,14 +13,15 @@ pub struct Response {
 }
 
 impl Response {
-    pub fn new<T: Into<Vec<u8>>>(output: T, err: T) -> Response {
+    pub fn boxed<T: Into<Vec<u8>>>(output: T, err: T) -> *mut Response {
         let output_ptr = string_to_c_char(output);
         let err_ptr = string_to_c_char(err);
 
-        Response {
+        let resp = Response {
             output: output_ptr,
             err: err_ptr,
-        }
+        };
+        return Box::into_raw(Box::new(resp));
     }
 }
 
@@ -33,32 +32,21 @@ fn string_to_c_char<T: Into<Vec<u8>>>(value: T) -> *const c_char {
     return value_ptr;
 }
 
-fn is_program_in_path(program: &str) -> bool {
-    if let Ok(path) = env::var("PATH") {
-        for p in path.split(":") {
-            let p_str = format!("{}/{}", p, program);
-            if fs::metadata(p_str).is_ok() {
-                return true;
-            }
-        }
-    }
-    false
-}
-
 #[no_mangle]
 pub extern "C" fn getCommandOutput(command: *const c_char) -> *mut Response {
     let buf_command = unsafe { CStr::from_ptr(command).to_bytes() };
     let str_command = String::from_utf8(buf_command.to_vec()).unwrap();
-    if !is_program_in_path(&str_command) {
-        let resp = Response::new("", "program not in path");
-        return Box::into_raw(Box::new(resp))
-    }
-    let output = Command::new(str_command)
+    let cmd = Command::new(str_command)
         .arg("--version")
-        .output()
-        .expect("Command::new failed");
-    let resp = Response::new(output.stdout, output.stderr);
-    return Box::into_raw(Box::new(resp))
+        .output();
+    match cmd {
+        Ok(cmd) => {
+            return Response::boxed(cmd.stdout, cmd.stderr);
+        },
+        Err(_e) => {
+            return Response::boxed("", "Command::new failed");
+        }
+    }
 }
 
 #[no_mangle]

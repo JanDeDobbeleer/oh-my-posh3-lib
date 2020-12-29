@@ -52,12 +52,11 @@ func (c *cmd) runCommandFromRust(command string) (string, error) {
 	commandC := C.CString(command)
 	response := C.getCommandOutput(commandC)
 	defer C.DestroyResponse(response)
-	value := C.GoString(response.output)
-	const err string = "err: "
-	if strings.HasPrefix(value, err) {
-		errStr := strings.TrimPrefix(value, err)
-		return "", errors.New(errStr)
+	output := C.GoString(response.output)
+	err := C.GoString(response.err)
+	if err != "" {
+		return "", errors.New(err)
 	}
-	valueClean := strings.TrimSuffix(value, "\n")
+	valueClean := strings.TrimSuffix(output, "\n")
 	return valueClean, nil
 }
