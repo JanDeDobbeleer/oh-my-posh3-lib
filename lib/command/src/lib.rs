@@ -54,7 +54,7 @@ pub extern "C" fn getCommandOutput(command: *const c_char) -> *mut Response {
         return Box::into_raw(Box::new(resp))
     }
     let output = Command::new(str_command)
-        .arg("Hello World")
+        .arg("--version")
         .output()
         .expect("Command::new failed");
     let resp = Response::new(output.stdout, output.stderr);

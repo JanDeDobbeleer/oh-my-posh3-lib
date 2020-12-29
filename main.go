@@ -1,4 +1,4 @@
-package main
+package command
 
 /*
 #cgo LDFLAGS: -L./lib -lcommand
@@ -17,8 +17,10 @@ import (
 	"time"
 )
 
-func runCommand(command string) (string, error) {
-	cmd := exec.Command(command, "Hello world")
+type cmd struct{}
+
+func (c *cmd) runCommand(command string) (string, error) {
+	cmd := exec.Command(command, "--version")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Fatal(err)
@@ -48,27 +50,29 @@ func runCommand(command string) (string, error) {
 	return output.String(), nil
 }
 
-func runCommandFromRust(command string) (string, error) {
+func (c *cmd) runCommandFromRust(command string) (string, error) {
 	commandC := C.CString(command)
 	response := C.getCommandOutput(commandC)
-	defer C.DestroyResponse(*response)
+	defer C.DestroyResponse(response)
 	value := C.GoString(response.output)
 	const err string = "err: "
 	if strings.HasPrefix(value, err) {
 		errStr := strings.TrimPrefix(value, err)
 		return "", errors.New(errStr)
 	}
-	return value, nil
+	valueClean := strings.TrimSuffix(value, "\n")
+	return valueClean, nil
 }
 
 func main() {
-	command := "echo"
+	cmd := &cmd{}
+	command := "git"
 	start := time.Now()
-	output, err := runCommandFromRust(command)
+	output, err := cmd.runCommandFromRust(command)
 	elapsed := time.Since(start)
 	log.Printf("runCommandFromRust took %s", elapsed)
 	start = time.Now()
-	output, err = runCommand(command)
+	output, err = cmd.runCommand(command)
 	elapsed = time.Since(start)
 	log.Printf("runCommand took %s", elapsed)
 	if err != nil {
