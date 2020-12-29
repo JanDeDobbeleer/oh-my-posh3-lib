@@ -28,10 +28,6 @@
 # will have compiled files and executables
 /target/
 
-# Remove Cargo.lock from gitignore if creating an executable, leave it for libraries
-# More information here https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html
-Cargo.lock
-
 ### vscode ###
 .vscode/*
 !.vscode/settings.json
@@ -41,6 +37,4 @@ Cargo.lock
 *.code-workspace
 
 # End of https://www.toptal.com/developers/gitignore/api/rust,go,vscode
-main
-lib/command/target
-lib/command.h
+posh3.h

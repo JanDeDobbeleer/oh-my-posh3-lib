@@ -1,4 +1,4 @@
-package command
+package main
 
 import (
 	"testing"
@@ -18,5 +18,5 @@ func TestCommandFromRust(t *testing.T) {
 	elapsedGo := time.Since(start)
 	assert.Equal(t, outputGo, output)
 	assert.Equal(t, errGo, err)
-	assert.LessOrEqual(t, elapsedGo.Microseconds(), elapsedRust.Microseconds())
+	assert.LessOrEqual(t, int64(elapsedGo), int64(elapsedRust))
 }

@@ -1,20 +1,17 @@
-package command
+package main
 
 /*
-#cgo LDFLAGS: -L./lib -lcommand
-#include <stdlib.h>
-#include "./lib/command.h"
+#cgo LDFLAGS: -L../ -lposh3
+#include "../posh3.h"
 */
 import "C"
 import (
 	"bufio"
 	"bytes"
 	"errors"
-	"fmt"
 	"log"
 	"os/exec"
 	"strings"
-	"time"
 )
 
 type cmd struct{}
@@ -62,22 +59,4 @@ func (c *cmd) runCommandFromRust(command string) (string, error) {
 	}
 	valueClean := strings.TrimSuffix(value, "\n")
 	return valueClean, nil
-}
-
-func main() {
-	cmd := &cmd{}
-	command := "git"
-	start := time.Now()
-	output, err := cmd.runCommandFromRust(command)
-	elapsed := time.Since(start)
-	log.Printf("runCommandFromRust took %s", elapsed)
-	start = time.Now()
-	output, err = cmd.runCommand(command)
-	elapsed = time.Since(start)
-	log.Printf("runCommand took %s", elapsed)
-	if err != nil {
-		fmt.Println("Found error: ", err)
-		return
-	}
-	fmt.Println(output)
 }
