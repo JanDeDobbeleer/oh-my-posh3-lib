@@ -7,5 +7,5 @@ fn main() {
 
     cbindgen::generate(crate_dir)
       .expect("Unable to generate bindings")
-      .write_to_file("posh3.h");
+      .write_to_file("./test/posh3.h");
 }
