@@ -1,15 +1,7 @@
-#include <cstdarg>
-#include <cstdint>
-#include <cstdlib>
-#include <ostream>
-#include <new>
+typedef struct {
+    const char *output;
+    const char *err;
+} Response;
 
-namespace ffi {
-
-extern "C" {
-
-const char *getCommandOutput(const char *command);
-
-} // extern "C"
-
-} // namespace ffi
+Response *getCommandOutput(const char *command);
+void *DestroyResponse(Response response);

@@ -1,13 +1,9 @@
 [package]
 name = "command"
 version = "0.1.0"
-build = "build.rs"
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
 libc = "0.2.2"
-
-[build-dependencies]
-cbindgen = "0.16.0"

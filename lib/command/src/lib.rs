@@ -7,10 +7,29 @@ use std::ffi::CString;
 use std::fs;
 use std::process::Command;
 
-#[repr(C)]
+#[derive(Debug, Clone)]
 pub struct Response {
-    output: *const c_char,
-    err: *const c_char,
+    pub output: *const c_char,
+    pub err: *const c_char,
+}
+
+impl Response {
+    pub fn new<T: Into<Vec<u8>>>(output: T, err: T) -> Response {
+        let output_ptr = string_to_c_char(output);
+        let err_ptr = string_to_c_char(err);
+
+        Response {
+            output: output_ptr,
+            err: err_ptr,
+        }
+    }
+}
+
+fn string_to_c_char<T: Into<Vec<u8>>>(value: T) -> *const c_char {
+    let value_str = CString::new(value).unwrap();
+    let value_ptr = value_str.as_ptr();
+    std::mem::forget(value_str);
+    return value_ptr;
 }
 
 fn is_program_in_path(program: &str) -> bool {
@@ -25,27 +44,25 @@ fn is_program_in_path(program: &str) -> bool {
     false
 }
 
-fn string_to_c_char<T: Into<Vec<u8>>>(value: T) -> *const c_char {
-    let value_str = CString::new(value).unwrap();
-    let value_ptr = value_str.as_ptr();
-    std::mem::forget(value_str);
-    return value_ptr;
-}
-
 #[no_mangle]
-pub extern "C" fn getCommandOutput(command: *const c_char) -> *const c_char {
+pub extern "C" fn getCommandOutput(command: *const c_char) -> *mut Response {
     let buf_command = unsafe { CStr::from_ptr(command).to_bytes() };
     let str_command = String::from_utf8(buf_command.to_vec()).unwrap();
     if !is_program_in_path(&str_command) {
-        return string_to_c_char("err: program not in path")
+        let resp = Response::new("", "program not in path");
+        return Box::into_raw(Box::new(resp))
     }
     let output = Command::new(str_command)
         .arg("Hello World")
         .output()
         .expect("Command::new failed");
-    if !output.status.success() {
-        let error = String::from_utf8(output.stderr).unwrap();
-        return string_to_c_char(format!("err: {}", error));
+    let resp = Response::new(output.stdout, output.stderr);
+    return Box::into_raw(Box::new(resp))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn DestroyResponse(resp: *mut Response) {
+    if !resp.is_null() {
+        drop(Box::from_raw(resp));
     }
-    return string_to_c_char(output.stdout);
 }

@@ -15,7 +15,6 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-	"unsafe"
 )
 
 func runCommand(command string) (string, error) {
@@ -51,10 +50,9 @@ func runCommand(command string) (string, error) {
 
 func runCommandFromRust(command string) (string, error) {
 	commandC := C.CString(command)
-	defer C.free(unsafe.Pointer(commandC))
 	response := C.getCommandOutput(commandC)
-	defer C.free(unsafe.Pointer(response))
-	value := C.GoString(response)
+	defer C.DestroyResponse(*response)
+	value := C.GoString(response.output)
 	const err string = "err: "
 	if strings.HasPrefix(value, err) {
 		errStr := strings.TrimPrefix(value, err)
