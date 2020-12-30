@@ -2,21 +2,45 @@ package main
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCommandFromRust(t *testing.T) {
+func TestCommandOneArg(t *testing.T) {
 	cmd := &cmd{}
 	command := "git"
-	start := time.Now()
-	output, err := cmd.runCommandFromRust(command)
-	elapsedRust := time.Since(start)
-	start = time.Now()
-	outputGo, errGo := cmd.runCommand(command)
-	elapsedGo := time.Since(start)
+	args := []string{"--version"}
+	outputGo, errGo := cmd.runCommand(command, args...)
+	output, err := cmd.runCommandFromRust(command, args...)
 	assert.Equal(t, outputGo, output)
 	assert.Equal(t, errGo, err)
-	assert.LessOrEqual(t, int64(elapsedGo), int64(elapsedRust))
+}
+
+func TestCommandMultipleArgs(t *testing.T) {
+	cmd := &cmd{}
+	command := "git"
+	args := []string{"status", "-unormal", "--short", "--branch"}
+	outputGo, errGo := cmd.runCommand(command, args...)
+	output, err := cmd.runCommandFromRust(command, args...)
+	assert.Equal(t, outputGo, output)
+	assert.Equal(t, errGo, err)
+}
+
+func TestCommandNoArgs(t *testing.T) {
+	cmd := &cmd{}
+	command := "git"
+	outputGo, errGo := cmd.runCommand(command)
+	output, err := cmd.runCommandFromRust(command)
+	assert.Equal(t, outputGo, output)
+	assert.Equal(t, errGo, err)
+}
+
+func TestCommandError(t *testing.T) {
+	cmd := &cmd{}
+	command := "git"
+	args := []string{"burp"}
+	outputGo, errGo := cmd.runCommand(command, args...)
+	output, err := cmd.runCommandFromRust(command, args...)
+	assert.Equal(t, outputGo, output)
+	assert.Equal(t, errGo, err)
 }
