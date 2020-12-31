@@ -1,9 +1,11 @@
 extern crate libc;
 
 use libc::c_char;
+use libc::c_int;
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::process::Command;
+use std::process::ExitStatus;
 use std::ptr;
 
 #[derive(Debug, Clone)]
@@ -11,15 +13,17 @@ use std::ptr;
 pub struct Response {
     pub output: *const c_char,
     pub err: *const c_char,
+    pub status_code: c_int,
 }
 
 impl Response {
-    pub fn boxed<T: Into<Vec<u8>>>(output: T, err: T) -> *mut Response {
+    pub fn boxed<T: Into<Vec<u8>>>(output: T, err: T, status_code: i32) -> *mut Response {
         let output_ptr = string_to_c_char(output);
         let err_ptr = string_to_c_char(err);
         let resp = Response {
             output: output_ptr,
             err: err_ptr,
+            status_code: status_code as c_int,
         };
         return Box::into_raw(Box::new(resp));
     }
@@ -40,6 +44,13 @@ fn string_to_c_char<T: Into<Vec<u8>>>(value: T) -> *const c_char {
     return value_ptr;
 }
 
+fn get_safe_status_code(status: ExitStatus) -> i32 {
+    match status.code() {
+        Some(code) => return code,
+        None       => return 0
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn getCommandOutput(command: *const c_char, args: *const c_char) -> *mut Response {
     let str_command = c_char_to_string(command);
@@ -52,10 +63,11 @@ pub extern "C" fn getCommandOutput(command: *const c_char, args: *const c_char) 
     let output = cmd.output();
     match output {
         Ok(cmd) => {
-            return Response::boxed(cmd.stdout, cmd.stderr);
+            let status_code = get_safe_status_code(cmd.status);
+            return Response::boxed(cmd.stdout, cmd.stderr, status_code);
         }
         Err(_e) => {
-            return Response::boxed("", "Command::new failed");
+            return Response::boxed("", "Command::new failed", 0);
         }
     }
 }
